@@ -1,0 +1,35 @@
+# ~/.dbt/profiles.yml
+# Place this file at: C:\Users\91984\.dbt\profiles.yml  (Windows)
+# Or: ~/.dbt/profiles.yml  (Mac/Linux)
+#
+# NEVER put credentials directly here for a portfolio project
+# Use environment variables instead (already set in .env)
+
+elt_pipeline:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user:    "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role:     "{{ env_var('SNOWFLAKE_ROLE') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      schema:   staging
+      threads:  4
+      client_session_keep_alive: False
+      query_tag: dbt_dev
+
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user:    "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role:     "{{ env_var('SNOWFLAKE_ROLE') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      schema:   staging
+      threads:  8
+      client_session_keep_alive: False
+      query_tag: dbt_prod

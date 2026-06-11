@@ -1,0 +1,62 @@
+# models/marts/schema.yml
+# dbt tests and documentation for mart tables.
+# Run with: dbt test --select marts
+# Generate docs with: dbt docs generate && dbt docs serve
+
+version: 2
+
+models:
+  - name: fct_orders
+    description: >
+      Fact table — one row per order with aggregated line item metrics.
+      This is the primary analytics table for revenue, shipping, and order performance.
+      Updated daily by Airflow. Clustered by order_date for fast time-range queries.
+    columns:
+      - name: order_key
+        description: "Primary key — unique order identifier"
+        tests:
+          - unique
+          - not_null
+      - name: customer_key
+        description: "Foreign key to dim_customers"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_key
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: ['O', 'F', 'P']
+      - name: net_revenue
+        tests:
+          - not_null
+      - name: num_line_items
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 50
+
+  - name: dim_customers
+    description: >
+      Customer dimension table enriched with lifetime order stats
+      and customer value tier classification.
+    columns:
+      - name: customer_key
+        description: "Primary key — unique customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: customer_value_tier
+        tests:
+          - accepted_values:
+              values: ['no_orders', 'standard', 'valuable', 'high_value']
+      - name: market_segment
+        tests:
+          - accepted_values:
+              values: ['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'HOUSEHOLD', 'MACHINERY']
+      - name: lifetime_order_count
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0

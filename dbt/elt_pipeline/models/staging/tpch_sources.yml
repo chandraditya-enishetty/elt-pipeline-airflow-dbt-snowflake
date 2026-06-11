@@ -1,0 +1,106 @@
+# models/staging/tpch_sources.yml
+# Defines the raw source tables from Snowflake's built-in TPC-H sample dataset.
+# No ingestion needed — these are already in every Snowflake account.
+
+version: 2
+
+sources:
+  - name: tpch
+    description: >
+      TPC-H benchmark dataset from Snowflake's built-in sample data.
+      Simulates a wholesale supplier business with orders, customers,
+      parts, suppliers, and line items. 1.5M orders, 6M line items.
+    database: snowflake_sample_data
+    schema: tpch_sf1
+    tables:
+
+      - name: orders
+        description: "One row per order. 1,500,000 rows."
+        columns:
+          - name: o_orderkey
+            description: "Primary key — unique order identifier"
+            tests:
+              - unique
+              - not_null
+          - name: o_custkey
+            description: "Foreign key to customer"
+            tests:
+              - not_null
+              - relationships:
+                  to: source('tpch', 'customer')
+                  field: c_custkey
+          - name: o_orderstatus
+            tests:
+              - accepted_values:
+                  values: ['O', 'F', 'P']
+          - name: o_totalprice
+            tests: [not_null]
+          - name: o_orderdate
+            tests: [not_null]
+
+      - name: lineitem
+        description: "One row per line item in an order. 6,001,215 rows."
+        columns:
+          - name: l_orderkey
+            description: "Foreign key to orders"
+            tests:
+              - not_null
+              - relationships:
+                  to: source('tpch', 'orders')
+                  field: o_orderkey
+          - name: l_linenumber
+            tests: [not_null]
+          - name: l_quantity
+            tests: [not_null]
+          - name: l_extendedprice
+            tests: [not_null]
+          - name: l_discount
+            tests: [not_null]
+
+      - name: customer
+        description: "One row per customer. 150,000 rows."
+        columns:
+          - name: c_custkey
+            tests: [unique, not_null]
+          - name: c_name
+            tests: [not_null]
+          - name: c_nationkey
+            tests:
+              - not_null
+              - relationships:
+                  to: source('tpch', 'nation')
+                  field: n_nationkey
+
+      - name: nation
+        description: "25 rows — one per nation."
+        columns:
+          - name: n_nationkey
+            tests: [unique, not_null]
+          - name: n_name
+            tests: [not_null]
+          - name: n_regionkey
+            tests:
+              - not_null
+              - relationships:
+                  to: source('tpch', 'region')
+                  field: r_regionkey
+
+      - name: region
+        description: "5 rows — AFRICA, AMERICA, ASIA, EUROPE, MIDDLE EAST."
+        columns:
+          - name: r_regionkey
+            tests: [unique, not_null]
+          - name: r_name
+            tests: [not_null]
+
+      - name: supplier
+        description: "10,000 rows — one per supplier."
+        columns:
+          - name: s_suppkey
+            tests: [unique, not_null]
+
+      - name: part
+        description: "200,000 rows — one per part."
+        columns:
+          - name: p_partkey
+            tests: [unique, not_null]

@@ -1,0 +1,46 @@
+name: 'elt_pipeline'
+version: '1.0.0'
+config-version: 2
+
+profile: 'elt_pipeline'
+
+# File paths
+model-paths:    ["models"]
+analysis-paths: ["analyses"]
+test-paths:     ["tests"]
+seed-paths:     ["seeds"]
+macro-paths:    ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+# Model configurations by layer
+models:
+  elt_pipeline:
+
+    staging:
+      +materialized: view          # Staging = lightweight views, no storage cost
+      +schema: staging
+      +tags: ["staging"]
+
+    intermediate:
+      +materialized: view          # Intermediate = views, joins happen on-the-fly
+      +schema: intermediate
+      +tags: ["intermediate"]
+
+    marts:
+      +materialized: table         # Marts = persisted tables, fast for BI tools
+      +schema: marts
+      +tags: ["marts"]
+      +post-hook: "GRANT SELECT ON {{ this }} TO ROLE dbt_role"
+
+# Variables for parameterising models
+vars:
+  start_date: '2018-01-01'
+  end_date:   '2018-12-31'
+
+# Package dependencies
+packages:
+  - package: dbt-labs/dbt_utils
+    version: [">=1.0.0", "<2.0.0"]

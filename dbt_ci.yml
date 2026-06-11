@@ -1,0 +1,82 @@
+# .github/workflows/dbt_ci.yml
+# Runs dbt tests on every pull request to main.
+# This is what interviewers mean by "CI/CD for data pipelines."
+
+name: dbt CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  dbt-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      SNOWFLAKE_ACCOUNT:   ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER:      ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PASSWORD:  ${{ secrets.SNOWFLAKE_PASSWORD }}
+      SNOWFLAKE_ROLE:      ${{ secrets.SNOWFLAKE_ROLE }}
+      SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+      SNOWFLAKE_DATABASE:  ${{ secrets.SNOWFLAKE_DATABASE }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dbt-snowflake
+        run: |
+          pip install dbt-core==1.8.0 dbt-snowflake==1.8.0
+
+      - name: Copy profiles.yml to ~/.dbt/
+        run: |
+          mkdir -p ~/.dbt
+          cp dbt/profiles.yml ~/.dbt/profiles.yml
+
+      - name: dbt deps (install packages)
+        working-directory: dbt/elt_pipeline
+        run: dbt deps
+
+      - name: dbt compile (check SQL syntax)
+        working-directory: dbt/elt_pipeline
+        run: dbt compile --target dev
+
+      - name: dbt test sources
+        working-directory: dbt/elt_pipeline
+        run: dbt test --select source:tpch
+
+      - name: dbt run staging models
+        working-directory: dbt/elt_pipeline
+        run: dbt run --select staging
+
+      - name: dbt test staging models
+        working-directory: dbt/elt_pipeline
+        run: dbt test --select staging
+
+      - name: dbt run all models
+        working-directory: dbt/elt_pipeline
+        run: dbt run
+
+      - name: dbt test all models
+        working-directory: dbt/elt_pipeline
+        run: dbt test
+
+      - name: Generate dbt docs
+        working-directory: dbt/elt_pipeline
+        run: dbt docs generate
+
+      - name: Upload dbt docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-docs
+          path: dbt/elt_pipeline/target/
+          retention-days: 7

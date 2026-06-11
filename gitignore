@@ -1,0 +1,27 @@
+# Credentials — NEVER commit these
+.env
+*.env
+profiles.yml
+
+# dbt build artifacts
+dbt/elt_pipeline/target/
+dbt/elt_pipeline/dbt_packages/
+dbt/elt_pipeline/logs/
+
+# Airflow
+logs/
+airflow.db
+airflow.cfg
+standalone_admin_password.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
